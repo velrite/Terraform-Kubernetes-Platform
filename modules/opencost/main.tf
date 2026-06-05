@@ -10,10 +10,10 @@ resource "helm_release" "opencost" {
     name  = "opencost.exporter.defaultClusterId"
     value = "prod-sim"
   }
- set {
-  name  = "opencost.prometheus.internal.enabled"
-  value = "false"
-  } 
+  set {
+    name  = "opencost.prometheus.internal.enabled"
+    value = "false"
+  }
   set {
     name  = "opencost.prometheus.external.enabled"
     value = "true"
