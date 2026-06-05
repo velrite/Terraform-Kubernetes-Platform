@@ -86,11 +86,14 @@ jobs:
             --out-file /tmp/infracost.json
 
       - name: Post cost estimate to PR
-        uses: infracost/actions/comment@v3
         if: github.event_name == 'pull_request'
-        with:
-          path: /tmp/infracost.json
-          behavior: update
+        run: |
+          infracost comment github \
+            --path /tmp/infracost.json \
+            --repo ${{ github.repository }} \
+            --github-token ${{ secrets.GITHUB_TOKEN }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --behavior update
 
   plan:
     name: Terraform Plan
@@ -131,3 +134,25 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: [validate, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init -backend=false -input=false
+        working-directory: ${{ env.WORKING_DIR }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ${{ env.WORKING_DIR }}
