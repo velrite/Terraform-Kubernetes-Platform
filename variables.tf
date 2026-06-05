@@ -27,3 +27,9 @@ variable "postgres_db" {
   type        = string
   default     = "appdb"
 }
+
+variable "grafana_password" {
+  description = "Grafana admin password"
+  type        = string
+  sensitive   = true
+}
