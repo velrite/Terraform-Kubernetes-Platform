@@ -1,20 +1,25 @@
 variable "namespace" {
-  type = string
+  description = "Kubernetes namespace"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Environment name"
+  type        = string
 }
 
 variable "postgres_password" {
-  type      = string
-  sensitive = true
+  description = "PostgreSQL password"
+  type        = string
+  sensitive   = true
 }
 
 variable "postgres_user" {
-  type = string
+  description = "PostgreSQL username"
+  type        = string
 }
 
 variable "postgres_db" {
-  type = string
+  description = "PostgreSQL database name"
+  type        = string
 }

@@ -1,8 +1,10 @@
 variable "namespace" {
-  type = string
+  description = "Kubernetes namespace"
+  type        = string
 }
 
 variable "grafana_password" {
-  type      = string
-  sensitive = true
+  description = "Grafana admin password"
+  type        = string
+  sensitive   = true
 }

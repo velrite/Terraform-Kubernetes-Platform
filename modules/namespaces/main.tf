@@ -1,21 +1,39 @@
-module "namespaces" {
-  source      = "./modules/namespaces"
-  environment = var.environment
+resource "kubernetes_namespace" "microservices" {
+  metadata {
+    name = "microservices"
+    labels = {
+      environment = var.environment
+      managed-by  = "terraform"
+    }
+  }
 }
 
-module "microservices" {
-  source            = "./modules/microservices"
-  namespace         = module.namespaces.microservices_namespace
-  environment       = var.environment
-  postgres_password = var.postgres_password
-  postgres_user     = var.postgres_user
-  postgres_db       = var.postgres_db
-  depends_on        = [module.namespaces]
+resource "kubernetes_namespace" "monitoring" {
+  metadata {
+    name = "monitoring"
+    labels = {
+      environment = var.environment
+      managed-by  = "terraform"
+    }
+  }
 }
 
-module "monitoring" {
-  source           = "./modules/monitoring"
-  namespace        = module.namespaces.monitoring_namespace
-  grafana_password = "REDACTED"
-  depends_on       = [module.namespaces]
+resource "kubernetes_namespace" "vault" {
+  metadata {
+    name = "vault"
+    labels = {
+      environment = var.environment
+      managed-by  = "terraform"
+    }
+  }
+}
+
+resource "kubernetes_namespace" "opencost" {
+  metadata {
+    name = "opencost"
+    labels = {
+      environment = var.environment
+      managed-by  = "terraform"
+    }
+  }
 }
