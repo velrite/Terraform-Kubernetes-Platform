@@ -253,6 +253,14 @@ Successful deployment provisions:
 - HashiCorp Vault secrets management
 - Modular Terraform architecture reproducible from a single command
 
+### terraform state list
+
+![kubectl get pods --all-namespaces](Screenshot%202026-06-04%20155821.png)
+
+### kubectl get pods --all-namespaces
+
+![terraform state list](Screenshot%202026-06-05%20081526.png)
+
 ---
 
 ## Lessons Learned
@@ -290,12 +298,10 @@ Successful deployment provisions:
 Olamide Olalekan — Platform & DevSecOps Engineer
 
 [LinkedIn](https://linkedin.com/in/olamide-olalekan-12138a265) |
-[GitHub](https://github.com/velrite)
+[GitHub](https://github.com/velrite) |
+[Website](https://velrite.github.io)
 
 ## Related Projects
 
 - [Auto-Healing Kubernetes Platform](https://github.com/velrite/auto-healing-kubernetes-platform)
 - [Dockerize-Everything](https://github.com/velrite/Dockerize-Everything)
-```
-
----
