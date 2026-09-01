@@ -2,85 +2,63 @@
 
 ---
 
-## Incident 1 — Hardcoded Password Committed to Public Repository
+## Incident 1 — Hardcoded Password in Public Repository
 
-**What happened:**
-```hcl
-# main.tf — committed and pushed to GitHub
-module "monitoring" {
-  grafana_password = "admin123secure"
-}
-```
+What happened:
+grafana_password = "admin123secure" committed in main.tf to public GitHub.
 
-**Root cause:**
-Password was written inline during initial module development
-before the variable abstraction was set up. Committed without
-reviewing the diff carefully.
+Root cause:
+Password written inline during module development before variable
+abstraction was set up. Committed without reviewing the diff.
 
-**Fix:**
-- Moved to terraform.tfvars (gitignored)
-- Changed to `var.grafana_password`
-- Rewrote git history with git-filter-repo
+Fix:
+- Moved to terraform.tfvars
+- Replaced with var.grafana_password
+- git-filter-repo rewrote history
 - Force pushed clean history
-- Added TruffleHog to CI pipeline
 
-**Prevention:**
-Pattern enforced: variable defined with `sensitive = true` before
-any resource that uses it. Never write the value anywhere except
-terraform.tfvars.
+Prevention:
+Define variable with sensitive = true before writing any resource that uses it.
+Never write literal credential values in .tf files.
 
 ---
 
 ## Incident 2 — Files Corrupted by Terminal Paste
 
-**What happened:**
+What happened:
 Large Terraform files pasted via terminal heredoc became corrupted:
 ```
 EOFype = stringres_db" { {d" {/modules/microservices/variables.tf
 ```
+terraform plan showed 0 resources because module files had garbage content.
 
-`terraform init` succeeded but `terraform plan` showed 0 resources
-because module files contained garbage content.
+Root cause:
+Browser terminals in GitHub Codespaces scramble large pastes.
+Characters dropped or interleaved when paste exceeds terminal buffer.
 
-**Root cause:**
-Browser-based terminals in GitHub Codespaces scramble large pastes.
-Characters are dropped or interleaved when paste volume exceeds
-the terminal buffer.
+Fix:
+Used VS Code editor for all file content.
+code filename.tf → Ctrl+A → delete → paste → Ctrl+S.
 
-**Fix:**
-Used VS Code editor directly for all file content:
-```bash
-code ~/terraform-k8s/modules/namespaces/main.tf
-# Ctrl+A, delete, paste, Ctrl+S
-```
-
-**Prevention:**
-Never use `cat << EOF` for files longer than 20 lines in browser terminals.
-Open file in editor, paste content there instead.
+Prevention:
+Never use cat << EOF for files longer than 20 lines in browser terminals.
 
 ---
 
-## Incident 3 — terraform apply Showed 0 Resources Added
+## Incident 3 — terraform apply Showed 0 Resources
 
-**What happened:**
-After running terraform apply:
-```
+What happened:
+After terraform apply:
 Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
-```
+Expected 13 resources.
 
-Expected 13 resources. Got 0.
+Root cause:
+modules/namespaces/main.tf contained root module calls instead of
+namespace resources — corrupted during Incident 2.
 
-**Root cause:**
-modules/namespaces/main.tf contained the root module calls
-instead of namespace resources. Files were mixed during
-the corrupted paste incident (Incident 2).
+Fix:
+Opened each module file in VS Code, verified content, re-applied.
 
-**Fix:**
-Opened each module file in VS Code editor.
-Verified content before running apply.
-Re-applied after fixing all files.
-
-**Prevention:**
-Always `cat <file>` to verify content before `terraform apply`.
+Prevention:
+Always cat the file to verify content before terraform apply.
 Corrupted files produce no error — Terraform just has nothing to create.
-

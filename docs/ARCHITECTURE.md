@@ -1,29 +1,22 @@
 # Architecture
 
-## How Terraform Manages This Platform
-
-Terraform operates in three phases:
+## How Terraform Works Here
 
 ```
 terraform plan
   → reads current state from terraform.tfstate
   → reads desired state from .tf files
-  → computes diff
-  → prints what will change
+  → computes diff and prints what will change
 
 terraform apply
-  → executes the plan
+  → executes plan
   → creates/updates/deletes resources
   → writes new state to terraform.tfstate
-
-terraform destroy
-  → destroys all resources in state
-  → removes state entries
 ```
 
-The state file is the source of truth for what Terraform owns.
-If a resource exists in the cluster but not in state, Terraform ignores it.
-If a resource is in state but not in .tf files, Terraform will destroy it on next apply.
+State file is the record of what Terraform owns.
+Resource in cluster but not in state — Terraform ignores it.
+Resource in state but not in .tf files — Terraform destroys it on next apply.
 
 ---
 
@@ -43,9 +36,9 @@ provider "helm" {
 }
 ```
 
-Both providers read from the same kubeconfig context.
-Context must exist before `terraform apply` runs.
-`aws eks update-kubeconfig` or `minikube start` creates this context.
+Both providers use the same kubeconfig context.
+Context must exist before terraform apply.
+minikube start creates this context automatically.
 
 ---
 
@@ -58,42 +51,39 @@ namespaces (no dependencies)
     ├──► monitoring    (depends_on namespaces)
     ├──► vault         (depends_on namespaces)
     └──► opencost      (depends_on monitoring)
-                              │
-                         needs Prometheus URL
-                         from monitoring module
 ```
 
-`depends_on` blocks enforce this order explicitly.
-Without them, Terraform might try to deploy a pod into a namespace
-that does not yet exist, causing a creation failure.
+depends_on enforces this order.
+Without it Terraform might deploy a pod before its namespace exists.
 
 ---
 
-## Sensitive Variable Handling
+## Sensitive Variables
 
 ```hcl
 variable "postgres_password" {
-  description = "PostgreSQL password"
-  type        = string
-  sensitive   = true    # Terraform never prints this in logs
+  type      = string
+  sensitive = true
+}
+
+variable "grafana_password" {
+  type      = string
+  sensitive = true
 }
 ```
 
-Variables marked `sensitive = true`:
-- Never appear in `terraform plan` output
-- Never appear in `terraform apply` output
-- Stored in state file (which is gitignored)
-- Must be provided via terraform.tfvars (gitignored) or environment variable
+sensitive = true means Terraform never prints these values
+in plan or apply output. Stored in terraform.tfstate which is gitignored.
+Values provided only via terraform.tfvars which is also gitignored.
 
 ---
 
-## What Terraform Does NOT Manage
+## What Terraform Does Not Manage
 
-- The Minikube cluster itself (started manually)
-- The docker-proxy fix (manual step on each Codespace)
-- Kubernetes RBAC beyond default namespacing
-- HPA configuration (defined in manifests/, not Terraform)
-- Prometheus alert rules (defined in monitoring/alert-rules.yaml)
+- The Minikube cluster itself
+- The docker-proxy fix
+- HPA configuration (in manifests/, applied with kubectl)
+- Prometheus alert rules (in monitoring/alert-rules.yaml)
+- Vault initialization and unsealing
 
-These are applied separately with kubectl after `terraform apply`.
-
+These are applied separately after terraform apply.

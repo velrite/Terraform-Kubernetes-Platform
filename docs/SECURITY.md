@@ -2,25 +2,10 @@
 
 ## Sensitive Variable Pattern
 
-All credentials use `sensitive = true` in variable definitions.
-Terraform enforces that sensitive values never appear in plan or apply output.
+All credentials marked sensitive = true.
+Terraform enforces they never appear in plan or apply output.
 
-```hcl
-# variables.tf
-variable "grafana_password" {
-  description = "Grafana admin password"
-  type        = string
-  sensitive   = true
-}
-
-variable "postgres_password" {
-  description = "PostgreSQL password"
-  type        = string
-  sensitive   = true
-}
-```
-
-Values provided only in terraform.tfvars which is excluded from Git:
+Values only in terraform.tfvars — excluded from Git:
 ```
 # .gitignore
 *.tfvars
@@ -33,48 +18,35 @@ Values provided only in terraform.tfvars which is excluded from Git:
 
 ## Credential Exposure Incident
 
-During development, Grafana password was hardcoded in main.tf:
+Grafana password was hardcoded in main.tf and committed to GitHub:
 ```hcl
-grafana_password = "admin123secure"  # WRONG — never do this
+grafana_password = "admin123secure"
 ```
 
-This was committed and pushed to a public GitHub repository.
+Detection: manual code review.
 
-**Detection:** Manual code review during commit preparation.
+Fix:
+1. Moved value to terraform.tfvars
+2. Replaced with var.grafana_password
+3. Scrubbed from all history:
+```bash
+git filter-repo --replace-text <(echo "admin123secure==>REDACTED") --force
+git push origin main --force
+```
 
-**Remediation:**
-1. Immediately moved value to terraform.tfvars (gitignored)
-2. Replaced with `var.grafana_password`
-3. Used git-filter-repo to scrub the value from all history:
-   ```bash
-   git filter-repo --replace-text <(echo "admin123secure==>REDACTED") --force
-   git push origin main --force
-   ```
-4. Verified removal:
-   ```bash
-   git log --all -p | grep -i "admin123"
-   # Returns nothing — clean
-   ```
-
-**Prevention:**
-Never write literal credential values in .tf files.
-Pattern: define variable first with `sensitive = true`, then reference it.
-CI pipeline runs TruffleHog on every push to catch future occurrences.
+Verified clean:
+```bash
+git log --all -p | grep -i "admin123"
+# Returns nothing
+```
 
 ---
 
 ## CI Security Scanning
 
-**TruffleHog:** Scans every commit for hardcoded secrets.
-Configured with `--only-verified` to reduce false positives.
-If triggered, pipeline stops and nothing else runs.
+TruffleHog: scans every push for hardcoded secrets.
+tfsec: scans Terraform for security misconfigurations. Soft fail.
+Checkov: validates compliance policies. Soft fail.
 
-**tfsec:** Scans Terraform configurations for security misconfigurations.
-Soft fail enabled — reports findings but does not block pipeline.
-Real production would enforce hard fail.
-
-**Checkov:** Validates compliance policies against Terraform resources.
-Known acceptable deviations skipped explicitly:
-- CKV_K8S_28: NET_RAW capability (demo environment, not production)
-- CKV_K8S_30: Security context (demo app does not require it)
-
+Known acceptable skips documented in workflow file.
+Real production would hard fail on tfsec and Checkov findings.

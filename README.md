@@ -1,31 +1,24 @@
 # Terraform Kubernetes Platform
 
-> The same platform as Project 1 — rebuilt entirely as code. Every resource defined declaratively. Reproducible with one command.
+The same platform as Project 1 — rebuilt entirely as code.
+Every namespace, deployment, service, and Helm release defined in Terraform.
+Destroy everything. Run one command. Identical platform back in minutes.
 
 **Author:** Olamide Olalekan — Platform & DevSecOps Engineer
 **GitHub:** [github.com/velrite](https://github.com/velrite)
 **LinkedIn:** [linkedin.com/in/olamide-olalekan-12138a265](https://linkedin.com/in/olamide-olalekan-12138a265)
 **Email:** velrite.tech@gmail.com
 
-**Connects to:**
-- [Project 1 — Auto-Healing Kubernetes Platform](https://github.com/velrite/auto-healing-k8s--)
-- [Project 3 — GitOps ArgoCD Platform](https://github.com/velrite/gitops-argocd-platform)
-
 ---
 
 ## The Problem This Solves
 
-In Project 1 every component was applied manually:
-- `kubectl apply` for each manifest
-- `helm install` for each tool
-- Manual namespace creation
-- Manual secret creation
+In Project 1 everything was applied manually.  the cluster is destroyed,
+rebuilding requires remembering every command in the correct order.
+There is no single record of what the platform is.
 
-If the cluster is destroyed, rebuilding requires remembering every command
-in the correct order. There is no single record of what the platform is.
-
-This project eliminates that. The Terraform code IS the record.
-Destroy everything and run `terraform apply` — identical platform in minutes.
+This project eliminates that. The Terraform code is the record.
+Destroy everything and run `terraform apply` — identical platform.
 
 ---
 
@@ -34,19 +27,10 @@ Destroy everything and run `terraform apply` — identical platform in minutes.
 ```bash
 terraform state list
 # 13 resources all managed by Terraform
-
-terraform destroy -auto-approve
-# All 13 resources destroyed
-
-terraform apply -auto-approve
-# All 13 resources recreated identically
 ```
 
 [SCREENSHOT: terraform state list showing all 13 resources]
 [SCREENSHOT: terraform apply output showing Apply complete! Resources: 13 added]
-
----
-
 ## Resources Managed (13 total)
 
 | Resource | Type | Module |
@@ -71,47 +55,29 @@ terraform apply -auto-approve
 
 ```
 terraform/
-├── main.tf                 — providers, backend config, module calls
-├── variables.tf            — all input variables with types and descriptions
-├── terraform.tfvars        — variable values (gitignored — never committed)
+├── main.tf              — providers, module calls
+├── variables.tf         — input variables with sensitive = true
+├─�erraform.tfvars     — values (gitignored — never committed)
 └── modules/
-    ├── namespaces/         — 4 Kubernetes namespaces
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── microservices/      — deployments, services, postgres secret
-    │   ├── main.tf
-    │   └── variables.tf
-    ├── monitoring/         — Prometheus + Grafana Helm release
-    │   ├── main.tf
-    │   └── variables.tf
-    ├── vault/              — HashiCorp Vault Helm release
-    │   ├── main.tf
-    │   └── variables.tf
-    └── opencost/           — OpenCost Helm release
-        ├── main.tf
-        └── variables.tf
+    ├── namespaces/      — 4 Kubernetes namespaces
+    ├── microservices/   — deployments, services, postgres secret
+    ├── monitoring/      — Prometheus + Grafana Helm release
+    ├── vault/           — HashiCorp Vault Helm release
+    └── opencost/        — OpenCost Helm release
 ```
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-- Minikube running with prod-sim profile
-- kubectl configured
-- Terraform >= 1.7.0
-- Helm >= 3.0
-
-### Deploy
 ```bash
 terraform init
-terraform plan    # Review what will be created
+terraform plan
 terraform apply -auto-approve
 kubectl get pods --all-namespaces
 ```
 
-### Destroy
+Destroy:
 ```bash
 terraform destroy -auto-approve
 ```
@@ -120,41 +86,39 @@ terraform destroy -auto-approve
 
 ## CI/CD Security Pipeline
 
-Every push and pull request runs:
+Every push runs:
 
 ```
-push to main
-  └── Security Scan
-  │     ├── TruffleHog    — scans for hardcoded secrets and credentials
-  │     ├── tfsec         — scans Terraform for security misconfigurations
-  │     └── Checkov       — validates compliance policies
-  └── Validate
-        ├── terraform fmt -check  — enforces consistent formatting
-        ├── terraform init        — initializes providers
-        └── terraform validate    — validates syntax and configuration
+Security Scan
+  ├── TruffleHog  — scans for hardcoded secrets
+  ├── tfsec       — Terraform security misconfigurations
+  └── Checkov     — compliance policy violations
+
+Validate
+  ├── terraform fmt -check  — formatting check
+  ├── terraform init        — provider initialization
+  └── terraform validate    — syntax and configuration check
 ```
 
 [SCREENSHOT: GitHub Actions showing Security Scan and Validate both green]
 
-Security runs first. If any credential is found in code,
-the pipeline stops immediately. Nothing proceeds.
+Security runs first. Credential found means pipeline stops immediately.
 
 ---
 
 ## Documentation
 
-| Document | What It Covers |
-|----------|---------------|
+| File | Contents |
+|------|----------|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module design, provider config, dependency order |
-| [SECURITY.md](docs/SECURITY.md) | Sensitive variables, git hygiene, credential incident |
-| [ADR.md](docs/ADR.md) | Why each tool and pattern was chosen |
-| [INCIDENTS.md](docs/INCIDENTS.md) | Real problems — hardcoded password, file corruption |
-| [GAPS.md](docs/GAPS.md) | Remote state, workspace separation, apply in CI |
+| [SECURITY.md](docs/SECURITY.md) | Sensitive variables, credential incident and fix |
+| [ADR.md](docs/ADR.md) | Every decision with alternatives rejected |
+| [INCIDENTS.md](docs/INCIDENTS.md) | Hardcoded password, corrupted files, 0 resources bug |
+| [GAPS.md](docs/GAPS.md) | Remote state, workspaces, apply in CI |
 
 ---
 
-## Author
+## Related Projects
 
-Olamide Olalekan — Platform & DevSecOps Engineer
-GitHub: [github.com/velrite](https://github.com/velrite)
-LinkedIn: [linkedin.com/in/olamide-olalekan-12138a265](https://linkedin.com/in/olamide-olalekan-12138a265)
+- [Project 1 — Auto-Healing Kubernetes Platform](https://github.com/velrite/auto-healing-k8s--) — what this provisions manually
+- [Project 3 — GitOps ArgoCD Platform](https://github.com/velrite/gitops-argocd-platform) — ArgoCD provisioned using this pattern
