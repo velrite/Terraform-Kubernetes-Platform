@@ -38,8 +38,9 @@ resource "kubernetes_deployment" "postgres" {
       }
       spec {
         container {
-          name  = "postgres"
-          image = "postgres:14-alpine"
+          name              = "postgres"
+          image             = "docker.io/library/postgres:14-alpine"
+          image_pull_policy = "Never"
           port {
             container_port = 5432
           }
@@ -103,8 +104,9 @@ resource "kubernetes_deployment" "api_service" {
       }
       spec {
         container {
-          name  = "api-service"
-          image = "nginx:alpine"
+          name              = "api-service"
+          image             = "docker.io/library/nginx:alpine"
+          image_pull_policy = "Never"
           port {
             container_port = 80
           }
@@ -151,8 +153,9 @@ resource "kubernetes_deployment" "frontend" {
       }
       spec {
         container {
-          name  = "frontend"
-          image = "nginx:alpine"
+          name              = "frontend"
+          image             = "docker.io/library/nginx:alpine"
+          image_pull_policy = "Never"
           port {
             container_port = 80
           }

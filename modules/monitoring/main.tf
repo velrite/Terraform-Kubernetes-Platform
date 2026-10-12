@@ -10,40 +10,61 @@ resource "helm_release" "prometheus" {
     name  = "prometheus.prometheusSpec.retention"
     value = "7d"
   }
+
   set {
     name  = "prometheus.prometheusSpec.resources.requests.memory"
     value = "128Mi"
   }
+
   set {
     name  = "prometheus.prometheusSpec.resources.limits.memory"
     value = "256Mi"
   }
+
   set {
     name  = "grafana.resources.requests.memory"
     value = "128Mi"
   }
+
   set {
     name  = "grafana.resources.limits.memory"
     value = "256Mi"
   }
+
   set {
     name  = "grafana.adminPassword"
     value = var.grafana_password
   }
+
   set {
     name  = "nodeExporter.resources.requests.memory"
     value = "32Mi"
   }
+
   set {
     name  = "nodeExporter.resources.limits.memory"
     value = "64Mi"
   }
+
   set {
     name  = "kubeStateMetrics.resources.requests.memory"
     value = "32Mi"
   }
+
   set {
     name  = "kubeStateMetrics.resources.limits.memory"
     value = "64Mi"
   }
+
+  set {
+    name  = "prometheus.prometheusSpec.initContainers[0].name"
+    value = "init-config-reloader"
+  }
+
+
+  set {
+    name  = "alertmanager.alertmanagerSpec.initContainers[0].name"
+    value = "init-config-reloader"
+  }
+
 }
