@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.7.0"
+
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -40,24 +41,28 @@ module "microservices" {
   postgres_password = var.postgres_password
   postgres_user     = var.postgres_user
   postgres_db       = var.postgres_db
-  depends_on        = [module.namespaces]
+
+  depends_on = [module.namespaces]
 }
 
 module "monitoring" {
   source           = "./modules/monitoring"
   namespace        = module.namespaces.monitoring_namespace
   grafana_password = var.grafana_password
-  depends_on       = [module.namespaces]
+
+  depends_on = [module.namespaces]
 }
 
 module "vault" {
-  source     = "./modules/vault"
-  namespace  = module.namespaces.vault_namespace
+  source    = "./modules/vault"
+  namespace = module.namespaces.vault_namespace
+
   depends_on = [module.namespaces]
 }
 
 module "opencost" {
-  source     = "./modules/opencost"
-  namespace  = module.namespaces.opencost_namespace
+  source    = "./modules/opencost"
+  namespace = module.namespaces.opencost_namespace
+
   depends_on = [module.monitoring]
 }
