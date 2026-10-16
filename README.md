@@ -29,8 +29,12 @@ The Terraform configuration is the answer. It is the authoritative description o
 terraform state list | wc -l
 # 13
 
+![terraform state list showing 13 resources](docs/evidence/01-terraform-state-list.png)
+
 terraform plan
 # No changes. Your infrastructure matches the configuration.
+
+![terraform plan showing no changes](docs/evidence/02-terraform-plan-no-changes.png)
 ```
 
 [SCREENSHOT: docs/evidence/01-terraform-state-list.png]
