@@ -1,47 +1,37 @@
-# Gaps and Honest Limits
+# Gaps and Technical Debt
 
----
+Stated plainly, with the change production would make. Status words follow [index.md](index.md).
 
-## Remote State Not Configured
+| Gap | Status | Risk | Production change |
+| --- | ------ | ---- | ----------------- |
+| Destroy then apply round trip | Not recorded | The headline claim is untested as an experiment | Run it, record timings and the resource count before and after |
+| Remote state | Not built | State loss means re-importing every resource | S3 (or equivalent) backend with locking |
+| Workspaces | Not built | Single environment | Separate staging and production |
+| Apply from CI | Not built | Manual apply has no audit trail | Remote cluster plus a kubeconfig secret, apply after approval |
+| Minikube cluster outside Terraform | Not built | The cluster is not reproducible from this repository | Manage cluster creation as code |
+| HPA, alert rules, Vault configuration | Outside Terraform | Applied separately by hand | Bring under Terraform once their dependencies are stable |
+| Vault in dev mode | Configured for demonstration | Data lost on restart | Real Vault with the Terraform Vault provider |
+| Helm contents opaque to state | Accepted trade-off | Inner drift is invisible to plan | `helm status` checks, or a policy tool |
+| Provider auth by local kubeconfig | Configured | Static local credentials | Workload identity or short-lived credentials |
 
-State stored locally. Breaks for teams — concurrent applies corrupt state.
+## Findings read from the workflow file when these docs were generated
 
-Production pattern:
+- tfsec and Checkov run with `soft_fail: true` in the workflow file, so they report findings but do not fail the pipeline. Only TruffleHog and the Validate stage can turn it red.
+- TruffleHog runs with `--only-verified`, which reports only credentials it can confirm are live with the issuing service. A self-chosen password has nothing to verify against, so this pipeline would likely not flag the kind of secret that was leaked in Incident 1.
+- Some actions in the workflow are referenced by branch (`@main`, `@master`) instead of a pinned version or commit SHA, so an upstream change alters the pipeline without a commit here.
+
+## Remote state, the production pattern
+
 ```hcl
-backend "s3" {
-  bucket         = "platform-terraform-state"
-  key            = "production/terraform.tfstate"
-  region         = "eu-west-1"
-  encrypt        = true
-  dynamodb_table = "terraform-state-lock"
+terraform {
+  backend "s3" {
+    bucket         = "<state-bucket>"
+    key            = "platform/terraform.tfstate"
+    region         = "<region>"
+    dynamodb_table = "<lock-table>"
+    encrypt        = true
+  }
 }
 ```
 
----
-
-## No Terraform Workspaces
-
-Staging and production share the same state.
-Production requires separate state per environment.
-
----
-
-## Apply Stage Not in CI
-
-Pipeline validates and plans but does not apply.
-GitHub Actions runner does not have access to local Minikube cluster.
-Apply is run manually from Codespace terminal.
-
-What production requires:
-- Remote cluster (EKS, GKE, AKS)
-- Kubeconfig as GitHub Secret
-- Remote Terraform state
-- Approval gate before apply on main branch
-
----
-
-## HPA Not Managed by Terraform
-
-HPA lives in manifests/hpa.yaml applied separately with kubectl.
-Could be kubernetes_manifest resource in Terraform but adds dependency
-on metrics-server being available at plan time.
+This is the shape of the change. It has not been applied in this project.

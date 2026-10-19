@@ -1,62 +1,41 @@
 # Architecture Decision Records
 
----
+## ADR-001: Modules per platform concern
 
-## ADR-001 — Modules over flat configuration
+**Context.** All 13 resources could live in one `main.tf`.
+**Decision.** One module per concern: namespaces, microservices, monitoring, vault, opencost.
+**Reason.** Module boundaries follow what changes together. The monitoring module can be reused in another cluster project unchanged, and namespaces can be reasoned about apart from the workloads in them.
+**Trade-off.** One more layer to navigate. Plan output shows paths such as `module.monitoring.helm_release.prometheus`.
+**Production view.** Keep. This is the standard way to organise Terraform at scale.
 
-Context: could write all resources in single main.tf.
+## ADR-002: Local state over remote state
 
-Decision: separate modules per component.
+**Context.** State needs a home. The production pattern is S3 with DynamoDB locking.
+**Decision.** Local state, excluded from Git.
+**Reason.** Remote state needs an AWS account, bucket, lock table and IAM before anything can be managed. That is heavy for a single-engineer project that is rebuilt often.
+**Trade-off.** No team sharing and no locking. If the machine is lost the state is lost: the code survives, but Terraform no longer knows it owns the running resources, and apply fails with "already exists" until they are imported.
+**Production view.** Replace with remote state and locking before any team uses it. See [GAPS.md](GAPS.md).
 
-Alternatives rejected:
-- Single flat main.tf — unreadable beyond small projects. Cannot reuse
-  components without copy-paste.
+## ADR-003: Explicit depends_on between modules
 
-Trade-off: modules add indirection. Worth it for reusability.
-monitoring module works in any future project unchanged.
+**Context.** Terraform infers order from references. Modules that consume another module's outputs are ordered automatically.
+**Decision.** Declare `depends_on` in the root module in addition to any output references.
+**Reason.** The ordering is a real requirement, for example OpenCost needs the Prometheus from the monitoring module to exist first, and writing it explicitly makes that visible in one place.
+**Trade-off.** Where an output reference already implies the order, `depends_on` is redundant. A module-level `depends_on` also makes Terraform wait for the whole upstream module, which reduces parallelism.
+**Production view.** On large configurations prefer output-based dependencies for parallelism. At 13 resources the clarity is worth the cost.
 
----
+## ADR-004: Helm provider over raw manifests for the three tools
 
-## ADR-002 — Local state over remote state
+**Context.** kube-prometheus-stack, Vault and OpenCost each install many objects, including CRDs.
+**Decision.** One `helm_release` per tool.
+**Reason.** Helm owns CRD ordering and the dependencies between dozens of objects. Expressing them as individual Terraform resources would mean tracking each in state and ordering CRDs by hand.
+**Trade-off.** Helm releases are opaque to Terraform. State records the release and its values, not the objects inside. A manually deleted object inside a release does not appear in `terraform plan`; `helm status` would show it.
+**Production view.** Accepted trade-off.
 
-Context: Terraform state must be stored somewhere.
+## ADR-005: set blocks over a values file
 
-Decision: local state file, excluded from Git.
-
-Alternatives rejected:
-- S3 remote state with DynamoDB locking — correct for production teams.
-  Requires AWS account, bucket, DynamoDB table, IAM config.
-  Significant overhead for a single-engineer demo.
-
-Trade-off: local state cannot be shared. Lost if Codespace is deleted.
-Acceptable because terraform apply rebuilds everything from scratch.
-
----
-
-## ADR-003 — depends_on over output-based dependencies
-
-Context: modules need to deploy in order.
-
-Decision: explicit depends_on blocks.
-
-Alternatives rejected:
-- Output-based implicit dependencies — cleaner Terraform style but requires
-  threading namespace names through all downstream module variables.
-
-Trade-off: depends_on is less idiomatic. Prevents parallel resource creation.
-More readable for engineers not deep in Terraform.
-
----
-
-## ADR-004 — Helm provider over raw manifests for tools
-
-Context: installing Prometheus, Vault, OpenCost.
-
-Decision: helm_release resources in Terraform.
-
-Alternatives rejected:
-- kubectl_manifest with raw YAML — Prometheus alone is 40+ resources
-  including CRDs. Managing raw manifests for this is impractical.
-
-Trade-off: Helm releases are opaque to Terraform. Plan shows minimal detail
-for resources inside a Helm release.
+**Context.** Helm values can be passed as `set` blocks or a values file.
+**Decision.** `set` blocks for resource limits and secrets.
+**Reason.** They appear in plan output, so a changed memory limit shows as an explicit diff. A values file change shows only that a file changed.
+**Trade-off.** Verbose when there are many values.
+**Production view.** A hybrid: `set` for sensitive values and critical limits, a values file for large non-sensitive configuration.

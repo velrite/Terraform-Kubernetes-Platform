@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars (gitignored) and set real values.
+environment       = "production"
+postgres_user     = "appuser"
+postgres_db       = "appdb"
+postgres_password = "CHANGE_ME"
+grafana_password  = "CHANGE_ME"

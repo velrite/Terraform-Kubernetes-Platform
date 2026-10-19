@@ -1,26 +1,15 @@
 # Architecture
 
-## How Terraform Works Here
+## How Terraform works in this project
 
-```
-terraform plan
-  → reads current state from terraform.tfstate
-  → reads desired state from .tf files
-  → computes diff and prints what will change
+terraform plan reads terraform.tfstate and the *.tf files, prints the difference
+terraform apply executes the plan through the Kubernetes and Helm APIs, updates state
+terraform destroy removes every resource recorded in state
 
-terraform apply
-  → executes plan
-  → creates/updates/deletes resources
-  → writes new state to terraform.tfstate
-```
 
-State file is the record of what Terraform owns.
-Resource in cluster but not in state — Terraform ignores it.
-Resource in state but not in .tf files — Terraform destroys it on next apply.
+State is the record of what Terraform owns. A cluster object that is not in state is invisible to Terraform. A resource in state that is removed from the code is destroyed on the next apply.
 
----
-
-## Provider Configuration
+## Providers
 
 ```hcl
 provider "kubernetes" {
@@ -36,54 +25,37 @@ provider "helm" {
 }
 ```
 
-Both providers use the same kubeconfig context.
-Context must exist before terraform apply.
-minikube start creates this context automatically.
+Both read the `prod-sim` context created by `minikube start --profile=prod-sim`. If the cluster does not exist, the providers cannot connect and apply is blocked. Exact version constraints are in `main.tf`.
 
----
+## Modules and order
 
-## Module Dependency Order
+| Module | Contains | Depends on | Why |
+| ------ | -------- | ---------- | --- |
+| namespaces | 4 namespaces labelled `managed-by=terraform` | none | Everything else deploys into them |
+| microservices | postgres secret, 3 deployments, 2 services | namespaces | Pods cannot schedule without their namespace |
+| monitoring | kube-prometheus-stack Helm release | namespaces | Release targets the monitoring namespace |
+| vault | Vault Helm release, dev mode | namespaces | Release targets the vault namespace |
+| opencost | OpenCost Helm release | monitoring | OpenCost reads cost data from that Prometheus |
 
-```
-namespaces (no dependencies)
-    │
-    ├──► microservices (depends_on namespaces)
-    ├──► monitoring    (depends_on namespaces)
-    ├──► vault         (depends_on namespaces)
-    └──► opencost      (depends_on monitoring)
-```
+The `managed-by=terraform` label is functional: `kubectl get namespaces -l managed-by=terraform` answers "which namespaces does Terraform own", which matters once Helm, Argo CD and manual kubectl share a cluster.
 
-depends_on enforces this order.
-Without it Terraform might deploy a pod before its namespace exists.
+## The sensitive-value path
 
----
+terraform.tfvars (gitignored) -> sensitive variable -> kubernetes_secret
+-> Deployment references the secret by key
 
-## Sensitive Variables
 
-```hcl
-variable "postgres_password" {
-  type      = string
-  sensitive = true
-}
+The Deployment object in the cluster carries a secret reference, not the value. The value exists in the Kubernetes secret and in `terraform.tfstate`.
 
-variable "grafana_password" {
-  type      = string
-  sensitive = true
-}
-```
+## Helm configuration
 
-sensitive = true means Terraform never prints these values
-in plan or apply output. Stored in terraform.tfstate which is gitignored.
-Values provided only via terraform.tfvars which is also gitignored.
+Limits and passwords are passed as `set` blocks so they are visible in plan output and state. The memory limits for Prometheus and Grafana are reduced because the chart defaults allocate about 2 GB to Prometheus alone, which does not fit beside a multi-node cluster, Vault and OpenCost on an 8 GB machine.
 
----
-
-## What Terraform Does Not Manage
+## What Terraform does not manage
 
 - The Minikube cluster itself
-- The docker-proxy fix
-- HPA configuration (in manifests/, applied with kubectl)
-- Prometheus alert rules (in monitoring/alert-rules.yaml)
-- Vault initialization and unsealing
-
-These are applied separately after terraform apply.
+- HPA configuration (in the Auto-Healing project's manifests, applied with kubectl)
+- Prometheus alert rules
+- Vault secret engines, roles and policies (dev mode needs no initialisation)
+- Remote state and workspaces (not built, see [GAPS.md](GAPS.md))
+- The Kubernetes objects inside the three Helm releases
