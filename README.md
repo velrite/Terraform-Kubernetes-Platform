@@ -49,15 +49,7 @@ This project moves that knowledge out of memory and into code, and sets the bar 
 
 ## Architecture
 
-```
-Terraform state (13 resources)
-|
-+-- module.namespaces      4 namespaces, label managed-by=terraform
-+-- module.microservices   postgres secret, 3 deployments, 2 services
-+-- module.monitoring      kube-prometheus-stack (limits tuned for an 8 GB Codespace)
-+-- module.vault           Vault, dev mode
-+-- module.opencost        OpenCost, reads the existing Prometheus
-```
+![Terraform State — 13-Resource Architecture](docs/evidence/Terraform%20State_%2013-Resource%20Architecture.png)
 
 module.namespaces
 |-- module.microservices (pods need their namespace)
