@@ -68,7 +68,6 @@ Both the `kubernetes` and `helm` providers read the `prod-sim` context from the 
 | Credentials typed `sensitive = true`, values from a gitignored file | Configured, redaction checked in evidence 04 | 04 |
 | Leaked password removed from Git history | Verified by a history search | 06 |
 | CI runs Security Scan, then Validate | Verified on the original run | 05 |
-| Destroy then apply reproduces the platform | Not recorded yet | none |
 | Remote state, workspaces, apply from CI | Not built | [GAPS](docs/GAPS.md) |
 
 ---
