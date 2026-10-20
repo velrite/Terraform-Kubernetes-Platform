@@ -2,7 +2,7 @@
 
 I rebuilt the platform from my [Auto-Healing Kubernetes project](https://github.com/velrite/Auto-Healing-Kubernetes-Platform) as Terraform, to answer one question with evidence instead of a claim: can a platform be reproduced from code, rather than from commands someone remembers?
 
-**Status:** All 13 platform resources are defined in Terraform across 5 modules. On the original build they were applied and checked (`terraform state list` returned 13, `terraform plan` returned no changes) and the CI pipeline ran green. The original Codespace was later deleted, so the evidence is being recaptured on a rebuilt cluster: **7 screenshots are captured** and the [evidence index](docs/evidence/README.md) marks the rest as pending. A destroy-and-reapply round trip has not been recorded as an experiment yet. Nothing in this repository claims remote state, workspaces or automated apply.
+**Status:** All 13 platform resources are defined in Terraform across 5 modules. On the original build they were applied and checked (`terraform state list` returned 13, `terraform plan` returned no changes) and the CI pipeline ran green. The original Codespace was later deleted, so the evidence is being recaptured on a rebuilt cluster: **7 screenshots are captured** and the [evidence index](docs/evidence/README.md) 
 
 **Author:** Olamide Olalekan, Platform & DevSecOps Engineer | [GitHub](https://github.com/velrite) | [LinkedIn](https://linkedin.com/in/olamide-olalekan-12138a265) | velrite.tech@gmail.com
 
