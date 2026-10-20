@@ -51,13 +51,7 @@ This project moves that knowledge out of memory and into code, and sets the bar 
 
 ![Terraform State — 13-Resource Architecture](docs/evidence/Terraform%20State_%2013-Resource%20Architecture.png)
 
-module.namespaces
-|-- module.microservices (pods need their namespace)
-|-- module.monitoring (Helm release targets the monitoring namespace)
-|-- module.vault (Helm release targets the vault namespace)
 
-module.monitoring
-|-- module.opencost (OpenCost reads cost data from this Prometheus)
 
 
 Both the `kubernetes` and `helm` providers read the `prod-sim` context from the kubeconfig that `minikube start --profile=prod-sim` creates. The cluster must exist before `terraform apply`. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
