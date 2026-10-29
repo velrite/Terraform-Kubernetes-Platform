@@ -4,7 +4,7 @@ I rebuilt the platform from my [Auto-Healing Kubernetes project](https://github.
 
 **Status:** All 13 platform resources are defined in Terraform across 5 modules. On the original build they were applied and checked (`terraform state list` returned 13, `terraform plan` returned no changes) and the CI pipeline ran green. The original Codespace was later deleted, so the evidence is being recaptured on a rebuilt cluster: **7 screenshots are captured** and the [evidence index](docs/evidence/README.md) 
 
-**Author:** Olamide Olalekan, Platform & DevSecOps Engineer | [GitHub](https://github.com/velrite) | [LinkedIn](https://linkedin.com/in/olamide-olalekan-12138a265) | velrite.tech@gmail.com
+
 
 ---
 
